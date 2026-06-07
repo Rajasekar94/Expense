@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Expense Report</title>
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:'Segoe UI',sans-serif;
+}
+
+body{
+    background:linear-gradient(135deg,#4f46e5,#7c3aed);
+    min-height:100vh;
+}
+
+/* Navbar */
+
+.navbar{
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    background:#fff;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:15px 25px;
+    box-shadow:0 2px 15px rgba(0,0,0,0.1);
+    z-index:1000;
+}
+
+.logo{
+    font-size:22px;
+    font-weight:bold;
+    color:#4f46e5;
+}
+
+.nav-links{
+    display:flex;
+    list-style:none;
+    gap:25px;
+}
+
+.nav-links a{
+    text-decoration:none;
+    color:#333;
+    font-weight:600;
+    transition:.3s;
+}
+
+.nav-links a:hover{
+    color:#4f46e5;
+}
+
+.menu-toggle{
+    display:none;
+    font-size:28px;
+    cursor:pointer;
+}
+
+/* Container */
+
+.container{
+    max-width:1200px;
+    margin:90px auto 20px;
+    padding:15px;
+}
+
+.card{
+    background:#fff;
+    border-radius:20px;
+    padding:20px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.2);
+}
+
+.title{
+    text-align:center;
+    margin-bottom:20px;
+}
+
+.title h2{
+    color:#333;
+    margin-bottom:5px;
+}
+
+.title p{
+    color:#777;
+}
+
+/* Table */
+
+.table-container{
+    overflow-x:auto;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+}
+
+thead{
+    background:#4f46e5;
+    color:white;
+}
+
+th{
+    padding:15px;
+    text-align:left;
+}
+
+td{
+    padding:14px;
+    border-bottom:1px solid #eee;
+}
+
+tbody tr:nth-child(even){
+    background:#f8f9ff;
+}
+
+tbody tr:hover{
+    background:#eef2ff;
+}
+
+.loading{
+    text-align:center;
+    padding:20px;
+    color:#666;
+    font-size:18px;
+}
+
+/* Mobile Design */
+
+@media(max-width:768px){
+
+    .menu-toggle{
+        display:block;
+    }
+
+    .nav-links{
+        display:none;
+        position:absolute;
+        top:65px;
+        left:0;
+        width:100%;
+        background:#fff;
+        flex-direction:column;
+        padding:15px;
+        gap:15px;
+        box-shadow:0 5px 10px rgba(0,0,0,.1);
+    }
+
+    .nav-links.active{
+        display:flex;
+    }
+
+    .logo{
+        font-size:18px;
+    }
+
+    .container{
+        margin-top:80px;
+        padding:10px;
+    }
+
+    .card{
+        padding:15px;
+    }
+
+    table,
+    thead,
+    tbody,
+    th,
+    td,
+    tr{
+        display:block;
+        width:100%;
+    }
+
+    thead{
+        display:none;
+    }
+
+    tbody tr{
+        background:#fff;
+        margin-bottom:15px;
+        border-radius:15px;
+        padding:10px;
+        box-shadow:0 3px 12px rgba(0,0,0,0.1);
+    }
+
+    tbody td{
+        border:none;
+        text-align:right;
+        position:relative;
+        padding:12px 10px;
+        padding-left:50%;
+        word-break:break-word;
+    }
+
+    tbody td:before{
+        position:absolute;
+        left:10px;
+        width:45%;
+        font-weight:bold;
+        text-align:left;
+        color:#4f46e5;
+    }
+
+    tbody td:nth-child(1):before{
+        content:"Time Stamp";
+    }
+
+    tbody td:nth-child(2):before{
+        content:"Date";
+    }
+
+    tbody td:nth-child(3):before{
+        content:"Category";
+    }
+
+    tbody td:nth-child(4):before{
+        content:"Amount";
+    }
+}
+
+</style>
+</head>
+<body>
+
+<!-- Navbar -->
+
+<nav class="navbar">
+
+    <div class="logo">💰 Expense Tracker</div>
+
+    <ul class="nav-links">
+        <li><a href="index.html">Add Expense</a></li>
+        <li><a href="#">Reports</a></li>
+        <li><a href="#">Dashboard</a></li>
+    </ul>
+
+    <div class="menu-toggle" onclick="toggleMenu()">
+        ☰
+    </div>
+
+</nav>
+
+<!-- Content -->
+
+<div class="container">
+
+    <div class="card">
+
+        <div class="title">
+            <h2>Expense Report</h2>
+        </div>
+
+        <div class="table-container">
+
+            <table id="sheetTable">
+                <thead></thead>
+                <tbody></tbody>
+            </table>
+
+            <div class="loading" id="loading">
+                Loading expenses...
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+
+function toggleMenu(){
+    document.querySelector(".nav-links").classList.toggle("active");
+}
+
+const SHEET_ID = "1EToj1lX4yMWx8gn5whahNvu5cR-GE-nfBxJj8M27HdM";
+const API_KEY = "AIzaSyBFIUxT4z_JXnJufVtF7MLUNxF3rsE-3OY";
+const RANGE = encodeURIComponent("Res!A:D");
+
+fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE}?key=${API_KEY}`)
+.then(res => res.json())
+.then(data => {
+
+    document.getElementById("loading").style.display = "none";
+
+    if(data.error){
+        document.getElementById("loading").innerHTML =
+        "❌ " + data.error.message;
+        return;
+    }
+
+    let headerHTML = "";
+    let bodyHTML = "";
+
+
+const currentDate = new Date();
+const currentMonth = currentDate.getMonth(); // 0-11
+const currentYear = currentDate.getFullYear();
+
+data.values.forEach((row,index)=>{
+
+    if(index === 0){
+
+        headerHTML += "<tr>";
+
+        row.forEach(cell=>{
+            headerHTML += `<th>${cell}</th>`;
+        });
+
+        headerHTML += "</tr>";
+
+    }else{
+
+        // Date is in Column B (index 1)
+        const expenseDate = new Date(row[1]);
+
+        if(
+            expenseDate.getMonth() === currentMonth &&
+            expenseDate.getFullYear() === currentYear
+        ){
+
+            bodyHTML += "<tr>";
+
+            row.forEach(cell=>{
+                bodyHTML += `<td>${cell}</td>`;
+            });
+
+            bodyHTML += "</tr>";
+        }
+    }
+
+});
+
+
+    document.querySelector("#sheetTable thead").innerHTML = headerHTML;
+    document.querySelector("#sheetTable tbody").innerHTML = bodyHTML;
+
+})
+.catch(error => {
+
+    document.getElementById("loading").innerHTML =
+    "❌ Unable to load data";
+
+    console.error(error);
+
+});
+
+</script>
+
+</body>
+</html>
+```
